@@ -1,5 +1,5 @@
 # Lissage des profils de célérité
-source("./Code_R/fonctionsR/lissage.R")
+source("./Code_R/utils/lissage.R")
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep = ";")
 

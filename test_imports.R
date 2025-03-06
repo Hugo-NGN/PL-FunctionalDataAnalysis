@@ -1,7 +1,7 @@
 ################################################################################
 #                                     LISSAGE
 ################################################################################
-source("./fonctionsR/lissage.R")
+source("./utils/lissage.R")
 
 data(refinery)
 
@@ -63,7 +63,7 @@ length(breaks)
 ################################################################################
 #                               LISSAGE BLOC
 ################################################################################
-source('./Code_R/fonctionsR/lissage.R')
+source('./Code_R/utils/lissage.R')
 library('fda')
 
 data("CanadianWeather")
@@ -101,7 +101,7 @@ legend("topright", legend = paste("année", 1:32), col = colors, lwd = 2, cex = 
 #                                     DISTANCES
 ################################################################################
 
-source("./fonctionsR/distances_fonctionnelles.R")
+source("./utils/distances_fonctionnelles.R")
 
 X1 <- function(t) {
   cos(t)
