@@ -28,10 +28,8 @@ spline_lissage_bloc_quantile = function(bloc, l_grille, D, z){
     }
     # lambda optimal pour chaque courbe
     lambda_optimaux = l_grille[which.min(mat%>%c())]
-    liss = smooth.basis(lev, bloc%>%unname() , fdPar(base, 2, lambda = lambda_optimaux))$fd
-    bloc_hat = eval.fd(lev, liss)
-    coefs_bloc = matrix(liss$coefs, ncol = D)
-    rmse = sqrt(mean((bloc_hat - bloc)^2))
+    liss_df = smooth.basis(lev, bloc%>%unname() , fdPar(base, 2, lambda = lambda_optimaux))$fd
+    
   }else{
     # bloc --> matrice
     mat = matrix(0, nrow = dim(bloc)[1], ncol = length(l_grille))
@@ -40,21 +38,16 @@ spline_lissage_bloc_quantile = function(bloc, l_grille, D, z){
     }
     # lambda optimal pour chaque courbe
     lambda_optimaux = l_grille[apply(mat, MARGIN = 1, FUN = which.min)]
-    bloc_hat = matrix(0, ncol = dim(bloc)[2], nrow = dim(bloc)[1])
-    coefs_bloc = matrix(0, nrow = dim(bloc)[1], ncol =  D)
-    rmse = rep(0, dim(bloc)[1])
     liss_df = list()
     for (i in 1:dim(bloc)[1]){ 
       y = bloc[i,]
       liss = smooth.basis(lev, y%>%unname()%>%unlist()%>%as.numeric() , fdPar(base, 2, lambda = lambda_optimaux[i]))$fd 
       liss_df[[i]] = liss
-      bloc_hat[i, ] = eval.fd(lev, liss)
-      coefs_bloc[i, ] = liss$coefs
-      rmse[i] = sqrt(mean((bloc_hat[i, ] - bloc[i, ])^2))
+      
     }
     
   }
   
-  return(list(fd_obj = liss_df, bloc = bloc_hat, coefs = coefs_bloc, basis= base, rmse = rmse))
+  return(fd_obj = liss_df)
 }
 
