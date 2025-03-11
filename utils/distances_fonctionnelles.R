@@ -38,13 +38,13 @@ calculate_D1_matrix <- function(fd_obj, fine_grid) {
   # Largeur des intervalles pour la somme de Riemann
   delta <- diff(range(fine_grid)) / (length(fine_grid) - 1)
   
+  # Vérifier si fd_obj est bien une liste d'objets fd
+  if (!all(sapply(fd_obj, is.fd))) {
+    stop("fd_obj doit être une liste d'objets fonctionnels fd")
+  }
+  
   # Calculer les dérivées des objets fd
   fd_deriv_list <- lapply(fd_obj, deriv.fd)
-  
-  fd_deriv <- list()
-  for(i in range(0, length(fd_obj))){
-    fd_deriv[i] <- lapply(fd_obj[i], deriv.fd)
-  }
   
   for (i in 1:(n-1)) {
     for (j in (i+1):n) {
