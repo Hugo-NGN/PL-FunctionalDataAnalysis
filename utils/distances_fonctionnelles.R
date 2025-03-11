@@ -1,178 +1,103 @@
-library(pracma)
+library(fda)
 
-################################################################################
-#                       Fonction pour calculer D_0
-################################################################################
-
-
-
-
-
-D_0 <- function(X1, X2, T, n = 1000) {
-  # Créer un vecteur de points dans l'intervalle T
-  t_values <- seq(T[1], T[2], length.out = n)
-  # Calculer l'intégrale du carré des différences
-  integrand <- function(t) {
-    (X1(t) - X2(t))^2
-  }
-  # Calculer la racine carrée de l'intégrale
-  sqrt(integrate(integrand, lower = T[1], upper = T[2])$value)
-}
-
-
-
-
-
-
-################################################################################
-#                       Fonction pour calculer D_1
-################################################################################
-
-
-
-
-D_1 <- function(X1, X2, T, n = 1000) {
-  # Créer un vecteur de points dans l'intervalle T
-  t_values <- seq(T[1], T[2], length.out = n)
-  # Calculer les valeurs des fonctions sur les points
-  X1_values <- X1(t_values)
-  X2_values <- X2(t_values)
-  # Calculer les dérivées numériques
-  X1_deriv <- gradient(X1_values, t_values)
-  X2_deriv <- gradient(X2_values, t_values)
-  # Calculer l'intégrale du carré des différences des dérivées
-  integrand <- function(t) {
-    approx(t_values, (X1_deriv - X2_deriv)^2, t)$y
-  }
-  # Calculer la racine carrée de l'intégrale
-  sqrt(integrate(integrand, lower = T[1], upper = T[2])$value)
-}
-
-
-
-
-################################################################################
-#                       Fonction pour calculer D_p
-################################################################################
-
-
-
-
-D_p <- function(X1, X2, T, omega, n = 1000) {
-  t_values <- seq(T[1], T[2], length.out = n)
+# -------------------------------- D0 ------------------------------------------
+calculate_D0_matrix <- function(fd_obj, fine_grid) {
+  n <- length(fd_obj)
+  D0_matrix <- matrix(0, nrow = n, ncol = n)
   
-  # Calculer les valeurs des fonctions sur les points
-  X1_values <- X1(t_values)
-  X2_values <- X2(t_values)
+  # Largeur des intervalles pour la somme de Riemann
+  delta <- diff(range(fine_grid)) / (length(fine_grid) - 1)
   
-  # Calculer les dérivées numériques
-  X1_deriv <- gradient(X1_values, t_values)
-  X2_deriv <- gradient(X2_values, t_values)
-  
-  # Calculer les intégrales pondérées
-  integrand_0 <- function(t) {
-    (X1(t) - X2(t))^2
-  }
-  integrand_1 <- function(t) {
-    approx(t_values, (X1_deriv - X2_deriv)^2, t)$y
-  }
-  
-  integral_0 <- integrate(integrand_0, lower = T[1], upper = T[2])$value
-  integral_1 <- integrate(integrand_1, lower = T[1], upper = T[2])$value
-  
-  # Calculer D_p
-  sqrt((1 - omega) * integral_0 + omega * integral_1)
-}
-
-
-
-
-
-################################################################################
-#                       Fonction pour calculer D_0 (matrice)
-################################################################################
-
-
-
-D_0_matrix <- function(df, T, n = 1000) {
-  
-  num_processes <- ncol(df) - 1  
-  
-  # Initialiser une matrice de distances
-  distance_matrix <- matrix(0, nrow = num_processes, ncol = num_processes)
-  
-  # Calculer les distances pour chaque paire de processus
-  for (i in 1:(num_processes - 1)) {
-    for (j in (i + 1):num_processes) {
-      X1 <- function(t) approx(df[, 1], df[, i+1], t)$y
-      X2 <- function(t) approx(df[, 1], df[, j+1], t)$y
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      # Évaluer les courbes sur une grille fine
+      fd_i_vals <- eval.fd(fine_grid, fd_obj[[i]])
+      fd_j_vals <- eval.fd(fine_grid, fd_obj[[j]])
       
-      # Calculer D_0, D_1, et D_p
-      distance_matrix[i, j] <- D_0(X1, X2, T, n)
-      distance_matrix[j, i] <- distance_matrix[i, j]
+      # Calculer la différence au carré
+      diff_squared <- (fd_i_vals - fd_j_vals)^2
+      
+      # Approcher l'intégrale par la somme de Riemann
+      integral <- sum(diff_squared) * delta
+      
+      # Calculer la distance D0
+      D0_matrix[i, j] <- sqrt(integral)
+      D0_matrix[j, i] <- D0_matrix[i, j]
     }
   }
   
-  return(distance_matrix)
+  return(D0_matrix)
 }
 
 
-################################################################################
-#                       Fonction pour calculer D_1 (matrice)
-################################################################################
-
-
-
-D_1_matrix <- function(df, T, n = 1000) {
+# -------------------------------- D1 ------------------------------------------
+calculate_D1_matrix <- function(fd_obj, fine_grid) {
+  n <- length(fd_obj)
+  D1_matrix <- matrix(0, nrow = n, ncol = n)
   
-  num_processes <- ncol(df) - 1  
+  # Largeur des intervalles pour la somme de Riemann
+  delta <- diff(range(fine_grid)) / (length(fine_grid) - 1)
   
-  # Initialiser une matrice de distances
-  distance_matrix <- matrix(0, nrow = num_processes, ncol = num_processes)
+  # Calculer les dérivées des objets fd
+  fd_deriv_list <- lapply(fd_obj, deriv.fd)
   
-  # Calculer les distances pour chaque paire de processus
-  for (i in 1:(num_processes - 1)) {
-    for (j in (i + 1):num_processes) {
-      X1 <- function(t) approx(df[, 1], df[, i+1], t)$y
-      X2 <- function(t) approx(df[, 1], df[, j+1], t)$y
+  fd_deriv <- list()
+  for(i in range(0, length(fd_obj))){
+    fd_deriv[i] <- lapply(fd_obj[i], deriv.fd)
+  }
+  
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      # Évaluer les dérivées des courbes sur une grille fine
+      fd_i_deriv_vals <- eval.fd(fine_grid, fd_deriv_list[[i]])
+      fd_j_deriv_vals <- eval.fd(fine_grid, fd_deriv_list[[j]])
       
-      # Calculer D_0, D_1, et D_p
-      distance_matrix[i, j] <- D_1(X1, X2, T, n)
-      distance_matrix[j, i] <- distance_matrix[i, j]
+      # Calculer la différence au carré des dérivées
+      deriv_diff_squared <- (fd_i_deriv_vals - fd_j_deriv_vals)^2
+      
+      # Approcher l'intégrale par la somme de Riemann
+      integral <- sum(deriv_diff_squared) * delta
+      
+      # Calculer la distance D_1
+      D1_matrix[i, j] <- sqrt(integral)
+      D1_matrix[j, i] <- D1_matrix[i, j]  
     }
   }
   
-  return(distance_matrix)
+  return(D1_matrix)
 }
 
-
-
-
-
-################################################################################
-#                       Fonction pour calculer D_p (matrice)
-################################################################################
-
-
-
-D_p_matrix <- function(df, T, omega = 0.5, n = 1000) {
-
-  num_processes <- ncol(df) - 1  
+# -------------------------------- Dp ------------------------------------------
+calculate_Dp_matrix <- function(fd_obj, fine_grid, omega) {
+  n <- length(fd_obj)
+  Dp_matrix <- matrix(0, nrow = n, ncol = n)
   
-  # Initialiser une matrice de distances
-  distance_matrix <- matrix(0, nrow = num_processes, ncol = num_processes)
+  # Largeur des intervalles pour la somme de Riemann
+  delta <- diff(range(fine_grid)) / (length(fine_grid) - 1)
   
-  # Calculer les distances pour chaque paire de processus
-  for (i in 1:(num_processes - 1)) {
-    for (j in (i + 1):num_processes) {
-      X1 <- function(t) approx(df[, 1], df[, i+1], t)$y
-      X2 <- function(t) approx(df[, 1], df[, j+1], t)$y
+  for (i in 1:(n-1)) {
+    for (j in (i+1):n) {
+      # Évaluer les courbes et leurs dérivées sur une grille fine
+      fd_i_vals <- eval.fd(fine_grid, fd_obj[[i]])
+      fd_j_vals <- eval.fd(fine_grid, fd_obj[[j]])
       
-      # Calculer D_0, D_1, et D_p
-      distance_matrix[i, j] <- D_p(X1, X2, T, omega, n)
-      distance_matrix[j, i] <- distance_matrix[i, j]
+      fd_i_deriv_vals <- eval.fd(fine_grid, deriv.fd(fd_obj[[i]]))
+      fd_j_deriv_vals <- eval.fd(fine_grid, deriv.fd(fd_obj[[j]]))
+      
+      # Calculer la différence au carré des courbes
+      diff_squared <- (fd_i_vals - fd_j_vals)^2
+      
+      # Calculer la différence au carré des dérivées
+      deriv_diff_squared <- (fd_i_deriv_vals - fd_j_deriv_vals)^2
+      
+      # Approcher l'intégrale par la somme de Riemann
+      integral_values <-  (1-omega) * sum(diff_squared) * delta + omega * sum(deriv_diff_squared) * delta
+      
+      # Calculer la distance D_p
+      Dp_matrix[i, j] <- sqrt(integral_values)
+      Dp_matrix[j, i] <- Dp_matrix[i, j] 
     }
   }
-  
-  return(distance_matrix)
+  return(Dp_matrix)
 }
+
