@@ -10,7 +10,7 @@ source("./utils/distances_fonctionnelles.R")
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data, extract_n_data=200)
+data <-preprocess(data)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -24,6 +24,7 @@ z <- as.numeric(colnames(data))
 #lissage B-spline
 fd_obj <- spline_lissage_bloc_quantile(data, l_grille, D, z)
 
+saveRDS(fd_obj, file = "./data/fdata.rds")
 ## ------------------------ Affichage courbes lisses ---------------------------
 plot(fd_obj[[1]], col = 1, lty = 1, main = "Courbes fonctionnelles (bloc 47)",
      ylab = "Célérité", xlab = "Profondeurs")
