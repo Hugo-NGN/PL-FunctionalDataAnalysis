@@ -5,6 +5,8 @@ library(factoextra)
 source("./utils/lissage.R")
 source("./utils/prepocess.R")
 source("./utils/distances_fonctionnelles.R")
+source("./utils/derive_fonctionnelle.R")
+
 
 # ------------------------- Chargement des donnees  ----------------------------
 
@@ -24,6 +26,7 @@ z <- as.numeric(colnames(data))
 #lissage B-spline
 fd_obj <- spline_lissage_bloc_quantile(data, l_grille, D, z)
 
+# sauvegarde du lissage
 saveRDS(fd_obj, file = "./data/fdata.rds")
 ## ------------------------ Affichage courbes lisses ---------------------------
 plot(fd_obj[[1]], col = 1, lty = 1, main = "Courbes fonctionnelles (bloc 47)",
