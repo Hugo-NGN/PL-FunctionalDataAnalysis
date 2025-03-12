@@ -12,7 +12,7 @@ source("./utils/derive_fonctionnelle.R")
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data)
+data <-preprocess(data, extract_n_data = 100)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -28,6 +28,8 @@ fd_obj <- spline_lissage_bloc_quantile(data, l_grille, D, z)
 
 # sauvegarde du lissage
 saveRDS(fd_obj, file = "./data/fdata.rds")
+
+#fd_obj <- readRDS("./data/fdata.rds")
 ## ------------------------ Affichage courbes lisses ---------------------------
 plot(fd_obj[[1]], col = 1, lty = 1, main = "Courbes fonctionnelles (bloc 47)",
      ylab = "Célérité", xlab = "Profondeurs")
@@ -35,6 +37,22 @@ plot(fd_obj[[1]], col = 1, lty = 1, main = "Courbes fonctionnelles (bloc 47)",
 for (i in 2:length(fd_obj)) {
   lines(fd_obj[[i]], col = i, lty = 1)
 }
+
+
+## ----------------------- Affichage courbes derivees --------------------------
+deriv_list = list()
+for (i in seq(1, length(fd_obj))){
+  deriv_list[[i]] <- eval.fd(fine_grid, fd_obj[[i]], Lfdobj=1)
+}
+
+
+plot(fine_grid, deriv_list[[1]], type ="l", col = 1, lty = 1, main = "Courbes fonctionnelles (bloc 47)",
+     ylab = "Dérivés de la célérité/profondeur", xlab = "Profondeurs")
+
+for (i in 2:length(fd_obj)) {
+  lines(deriv_list[[i]], col = i, lty = 1)
+}
+
 
 # ------------------------- Calcul matrices des distances ----------------------
 ## ---------------------------- Calcul matrice D0  ----------------------------- 
@@ -44,6 +62,15 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
 
 D0_matrix <- calculate_D0_matrix(fd_obj, fine_grid)
 
+plot_ly(z = ~D0_matrix, type = "surface") %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "Profil"),
+      yaxis = list(title = "Profil"),
+      zaxis = list(title = "Distance D0")
+    )
+  )
+
 ## ---------------------------- Calcul matrice D1  -----------------------------
 
 fine_grid <- seq(min(as.numeric(colnames(data))),
@@ -51,6 +78,15 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
                  length.out = 10000)
 
 D1_matrix <- calculate_D1_matrix(fd_obj, fine_grid)
+
+plot_ly(z = ~D1_matrix, type = "surface") %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "Profil"),
+      yaxis = list(title = "Profil"),
+      zaxis = list(title = "Distance D1")
+    )
+  )
 
 ## ---------------------------- Calcul matrice Dp ------------------------------
 

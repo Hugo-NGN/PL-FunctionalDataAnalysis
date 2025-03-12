@@ -15,10 +15,14 @@ spline_lissage_bloc_quantile = function(bloc, l_grille, D, z){
   # grille à pas variable
   q = quantile(z)
   d = (D-2)/4  # je sais que je prendrais D = 50 à adapter à l'avenir
-
+  remainder = D - 2 - 4*d
   lev = z
 
-  breaks = c(seq(q[1], q[2], length.out = d), seq(q[2] + 0.1, q[3], length.out = d), seq(q[3] + 0.1, q[4], length.out = d), seq(q[4] + 0.1, q[5], length.out = d))
+  breaks = c(seq(q[1], q[2], length.out = d+remainder),
+             seq(q[2] + 0.1, q[3], length.out = d),
+             seq(q[3] + 0.1, q[4], length.out = d),
+             seq(q[4] + 0.1, q[5], length.out = d))
+  
   base = create.bspline.basis(rangeval = range(lev), nbasis = D, breaks = breaks)
 
   if (is.vector(bloc)){
