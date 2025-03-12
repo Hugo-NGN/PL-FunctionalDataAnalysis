@@ -98,7 +98,14 @@ omega <- 0.5
 
 Dp_matrix <- calculate_Dp_matrix(fd_obj, fine_grid, omega)
 
-
+plot_ly(z = ~Dp_matrix, type = "surface") %>%
+  layout(
+    scene = list(
+      xaxis = list(title = "Profil"),
+      yaxis = list(title = "Profil"),
+      zaxis = list(title = "Distance Dp")
+    )
+  )
 # ------------------------------- Clustering -----------------------------------
 ## --------------------------------- CAH ---------------------------------------
 hc <- hclust(as.dist(D0_matrix), method = "complete")
