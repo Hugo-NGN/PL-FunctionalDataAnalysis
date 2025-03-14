@@ -69,12 +69,12 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
                  length.out = 1000)
 
 ### ----------------------- calcul D0 sequentiellement ------------------------- 
-#D0_matrix <- calculate_D0_matrix(fd_obj, fine_grid)
+#system.time(D0_matrix <- calculate_D0_matrix(fd_obj, fine_grid))
 # saveRDS(D0_matrix, file="./data/D0_matrix.rds")
 #D0_matrix <- readRDS("./data/D0_matrix.rds")
 
 ### -------------------- calcul D0 avec parallelisation ------------------------
-D0_matrix <- calculate_D0_matrix_parallel(fd_obj, fine_grid)
+system.time(D0_matrix <- calculate_D0_matrix_parallel(fd_obj, fine_grid))
 #saveRDS(D0_matrix, file="./data/D0_matrix_n1000.rds")
 #D0_matrix <- readRDS("./data/D0_matrix.rds")
 
@@ -167,3 +167,45 @@ silhouette_score <- silhouette(groups, as.dist(D0_matrix))
 avg_silhouette_width <- mean(silhouette_score[, 3])
 
 ## ------------------------------ K MEANS --------------------------------------
+# Initialiser un vecteur pour stocker les coefficients de silhouette moyens
+silhouette_scores <- numeric(9)
+
+# Boucle sur les valeurs de k de 2 à 10
+for (k in 2:10) {
+  # Appliquer k-means
+  km_result <- kmeans(D0_matrix, centers = k, nstart = 25)
+  
+  # Calculer le coefficient de silhouette
+  silhouette_score <- silhouette(km_result$cluster, as.dist(D0_matrix))
+  avg_silhouette_width <- mean(silhouette_score[, 3])
+  
+  # Stocker le coefficient de silhouette moyen
+  silhouette_scores[k - 1] <- avg_silhouette_width
+}
+
+# Tracer la courbe du coefficient de silhouette en fonction de k
+plot(2:10, silhouette_scores, type = "b",
+     xlab = "Nombre de clusters (k)",
+     ylab = "Coefficient de silhouette moyen",
+     main = "Coefficient de silhouette en fonction de k")
+
+# Appliquer k-means avec k = 3
+km_result <- kmeans(D0_matrix, centers = 2, nstart = 25)
+
+# Définir les couleurs pour chaque groupe
+group_colors <- c("red", "blue")
+
+# Visualiser les groupes
+plot(fd_obj[[1]], col = group_colors[km_result$cluster[1]], lty = 1,
+     main = "Courbes fonctionnelles par groupe",
+     ylab = "Célérité", xlab = "Profondeurs")
+
+for (i in 2:length(fd_obj)) {
+  lines(fd_obj[[i]], col = group_colors[km_result$cluster[i]], lty = 1)
+}
+
+# Ajouter une légende
+legend("topright", legend = paste("Groupe", 1:2), col = group_colors, lty = 1)
+
+
+
