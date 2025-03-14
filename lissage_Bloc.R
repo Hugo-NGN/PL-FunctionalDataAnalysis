@@ -2,6 +2,7 @@ library(tidyverse)
 library(fda)
 library(stats)
 library(factoextra)
+library(plotly)
 source("./utils/lissage.R")
 source("./utils/prepocess.R")
 source("./utils/distances_fonctionnelles.R")
@@ -12,7 +13,7 @@ source("./utils/derive_fonctionnelle.R")
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data, extract_n_data = 100)
+data <-preprocess(data, extract_n_data = 300)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -27,11 +28,11 @@ z <- as.numeric(colnames(data))
 fd_obj <- spline_lissage_bloc_quantile(data, l_grille, D, z)
 
 # sauvegarde du lissage
-saveRDS(fd_obj, file = "./data/fdata.rds")
+#saveRDS(fd_obj, file = "./data/fdata.rds")
 
 #fd_obj <- readRDS("./data/fdata.rds")
 ## ------------------------ Affichage courbes lisses ---------------------------
-plot(fd_obj[[1]], col = 1, lty = 1, main = "Courbes fonctionnelles (bloc 47)",
+plot(fd_obj[[1]], col = 1, lty = 1, main = "Profils lissés (bloc 47)",
      ylab = "Célérité", xlab = "Profondeurs")
 
 for (i in 2:length(fd_obj)) {
@@ -40,13 +41,20 @@ for (i in 2:length(fd_obj)) {
 
 
 ## ----------------------- Affichage courbes derivees --------------------------
+fine_grid <- seq(min(as.numeric(colnames(data))),
+                 max(as.numeric(colnames(data))),
+                 length.out = 10000)
+
 deriv_list = list()
 for (i in seq(1, length(fd_obj))){
   deriv_list[[i]] <- eval.fd(fine_grid, fd_obj[[i]], Lfdobj=1)
 }
 
+#saveRDS(deriv_list, file = "./data/fdata_deriv.rds")
 
-plot(fine_grid, deriv_list[[1]], type ="l", col = 1, lty = 1, main = "Courbes fonctionnelles (bloc 47)",
+#deriv_list <- readRDS("./data/fdata_deriv.rds")
+
+plot(fine_grid, deriv_list[[1]], type ="l", col = 1, lty = 1, main = "Dérivés des profils(bloc 47)",
      ylab = "Dérivés de la célérité/profondeur", xlab = "Profondeurs")
 
 for (i in 2:length(fd_obj)) {
@@ -58,9 +66,17 @@ for (i in 2:length(fd_obj)) {
 ## ---------------------------- Calcul matrice D0  ----------------------------- 
 fine_grid <- seq(min(as.numeric(colnames(data))),
                  max(as.numeric(colnames(data))),
-                 length.out = 10000)
+                 length.out = 1000)
 
-D0_matrix <- calculate_D0_matrix(fd_obj, fine_grid)
+### ----------------------- calcul D0 sequentiellement ------------------------- 
+#D0_matrix <- calculate_D0_matrix(fd_obj, fine_grid)
+# saveRDS(D0_matrix, file="./data/D0_matrix.rds")
+#D0_matrix <- readRDS("./data/D0_matrix.rds")
+
+### -------------------- calcul D0 avec parallelisation ------------------------
+D0_matrix <- calculate_D0_matrix_parallel(fd_obj, fine_grid)
+#saveRDS(D0_matrix, file="./data/D0_matrix_n1000.rds")
+#D0_matrix <- readRDS("./data/D0_matrix.rds")
 
 plot_ly(z = ~D0_matrix, type = "surface") %>%
   layout(
@@ -75,9 +91,16 @@ plot_ly(z = ~D0_matrix, type = "surface") %>%
 
 fine_grid <- seq(min(as.numeric(colnames(data))),
                  max(as.numeric(colnames(data))),
-                 length.out = 10000)
+                 length.out = 1000)
+### ----------------------- calcul D1 sequentiellement -------------------------
+# D1_matrix <- calculate_D1_matrix(fd_obj, fine_grid)
+# saveRDS(D1_matrix, file="./data/D1_matrix.rds")
+#D1_matrix <- readRDS("./data/D1_matrix.rds")
 
-D1_matrix <- calculate_D1_matrix(fd_obj, fine_grid)
+### -------------------- calcul D1 avec parallelisation ------------------------
+D1_matrix <- calculate_D1_matrix_parallel(fd_obj, fine_grid)
+#saveRDS(D1_matrix, file="./data/D1_matrix_n1000.rds")
+#D1_matrix <- readRDS("./data/D1_matrix.rds")
 
 plot_ly(z = ~D1_matrix, type = "surface") %>%
   layout(
@@ -92,11 +115,18 @@ plot_ly(z = ~D1_matrix, type = "surface") %>%
 
 fine_grid <- seq(min(as.numeric(colnames(data))),
                  max(as.numeric(colnames(data))),
-                 length.out = 10000)
+                 length.out = 1000)
 
 omega <- 0.5
+### ----------------------- calcul Dp sequentiellement -------------------------
+# Dp_matrix <- calculate_Dp_matrix(fd_obj, fine_grid, omega)
+# saveRDS(Dp_matrix, file="./data/D0_matrix.rds")
+#Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
-Dp_matrix <- calculate_Dp_matrix(fd_obj, fine_grid, omega)
+### -------------------- calcul Dp avec parallelisation ------------------------
+Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega)
+#saveRDS(Dp_matrix, file="./data/Dp_matrix_omega05_n1000.rds")
+#Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
 plot_ly(z = ~Dp_matrix, type = "surface") %>%
   layout(
@@ -131,5 +161,9 @@ for (i in 2:length(fd_obj)) {
 }
 
 legend("topright", legend = paste("Groupe", 1:3), col = group_colors, lty = 1)
+
+
+silhouette_score <- silhouette(groups, as.dist(D0_matrix))
+avg_silhouette_width <- mean(silhouette_score[, 3])
 
 ## ------------------------------ K MEANS --------------------------------------
