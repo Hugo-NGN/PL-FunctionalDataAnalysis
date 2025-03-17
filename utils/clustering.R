@@ -111,7 +111,8 @@ cah_optimal_silhouette <- function(D_matrix, fd_obj) {
   
   
   return(list(hc = hc_optimal, sil_info = sil_info, avg_silhouette = sil_avg, 
-              db_score = db_score, k_optimal = optimal_k, cluster = groups_optimal))
+              db_score = db_score, k_optimal = optimal_k,
+              cluster = groups_optimal))
 }
 
 
@@ -172,7 +173,8 @@ kmeans_fd <- function(D_matrix, k, fd_obj){
   # Ajouter une légende
   legend("topright", legend = paste("Groupe", 1:k), col = group_colors, lty = 1)
   
-  return(list(km_result = km_result, sil_info = sil_info, avg_silhouette = sil_avg, db_score = db_score))
+  return(list(km_result = km_result, sil_info = sil_info,
+              avg_silhouette = sil_avg, db_score = db_score))
 }
 
 

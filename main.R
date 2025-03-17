@@ -139,6 +139,22 @@ plot_ly(z = ~Dp_matrix, type = "surface") %>%
     )
   )
 # ------------------------------- Clustering -----------------------------------
+
+## ------------------------------ BASELINE -------------------------------------
+
+# Matrice de distance euclidienne des profils
+D_eucli_matrix <- as.matrix(dist(data, method = "euclidean"))
+
+k_optimal <- kmeans_optimal_k(D_eucli_matrix)
+
+kmeans_eucli <- kmeans(data, centers = k_optimal, nstart = 25)
+
+# calcul du score de Davies Bouldin
+baseline_db_score <- davies.bouldin(data, kmeans_eucli$cluster)
+
+# calcul du coefficient de silhouette
+baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_eucli_matrix))[, 3])
+
 ## --------------------------------- CAH ---------------------------------------
 ### ------------------------------ CAH  D0 -------------------------------------
 cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_obj)
@@ -210,12 +226,13 @@ kmeans_Dp <- kmeans_fd(Dp_matrix, k_Dp, fd_obj)
 
 
 
-## ------------------------------ ARI -------------------------------------------
+## ------------------- Comparaison classification ARI --------------------------
 ARI_D0 <- compute_ARI(kmeans_D0$km_result$cluster, cah_silhouette_opti_D0$cluster)
 ARI_D1 <- compute_ARI(kmeans_D1$km_result$cluster, cah_silhouette_opti_D1$cluster)
 ARI_Dp <- compute_ARI(kmeans_Dp$km_result$cluster, cah_silhouette_opti_Dp$cluster)
 
 
 
-# ------------------------------ FIN -------------------------------------------
 
+
+# ------------------------------ FIN -------------------------------------------
