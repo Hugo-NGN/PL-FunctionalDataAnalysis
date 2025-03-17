@@ -126,7 +126,7 @@ omega <- 0.5
 
 ### -------------------- calcul Dp avec parallelisation ------------------------
 system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = TRUE))
-#saveRDS(Dp_matrix, file="./data/Dp_matrix_omega05_n1000.rds")
+#saveRDS(Dp_matrix, file="./data/Dp_matrix_omega05_n100.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
 plot_ly(z = ~Dp_matrix, type = "surface") %>%
@@ -192,46 +192,19 @@ rect.hclust(hc_Dp, k = cah_silhouette_opti_Dp$k_optimal, border = "green")
 
 
 
+
+
 ## ------------------------------ K MEANS --------------------------------------
-# Initialiser un vecteur pour stocker les coefficients de silhouette moyens
-silhouette_scores <- numeric(9)
 
-# Boucle sur les valeurs de k de 2 à 10
-for (k in 2:10) {
-  # Appliquer k-means
-  km_result <- kmeans(D1_matrix, centers = k, nstart = 25)
-  
-  # Calculer le coefficient de silhouette
-  silhouette_score <- silhouette(km_result$cluster, as.dist(D0_matrix))
-  avg_silhouette_width <- mean(silhouette_score[, 3])
-  
-  # Stocker le coefficient de silhouette moyen
-  silhouette_scores[k - 1] <- avg_silhouette_width
-}
+# choix du k pour maximiser le coeff de Silhouette
+k_D0 <- kmeans_optimal_k(D0_matrix)
+k_D1 <- kmeans_optimal_k(D1_matrix)
+k_Dp <- kmeans_optimal_k(Dp_matrix)
 
-# Tracer la courbe du coefficient de silhouette en fonction de k
-plot(2:10, silhouette_scores, type = "b",
-     xlab = "Nombre de clusters (k)",
-     ylab = "Coefficient de silhouette moyen",
-     main = "Coefficient de silhouette en fonction de k")
-
-# Appliquer k-means avec k = 3
-km_result <- kmeans(D0_matrix, centers = 2, nstart = 25)
-
-# Définir les couleurs pour chaque groupe
-group_colors <- c("red", "blue")
-
-# Visualiser les groupes
-plot(fd_obj[[1]], col = group_colors[km_result$cluster[1]], lty = 1,
-     main = "Courbes fonctionnelles par groupe",
-     ylab = "Célérité", xlab = "Profondeurs")
-
-for (i in 2:length(fd_obj)) {
-  lines(fd_obj[[i]], col = group_colors[km_result$cluster[i]], lty = 1)
-}
-
-# Ajouter une légende
-legend("topright", legend = paste("Groupe", 1:2), col = group_colors, lty = 1)
+# clustering avec kmeans
+kmeans_D0 <- kmeans_fd(D0_matrix, k_D0, fd_obj)
+kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_obj)
+kmeans_Dp <- kmeans_fd(Dp_matrix, k_Dp, fd_obj)
 
 # ------------------------------ FIN -------------------------------------------
 
