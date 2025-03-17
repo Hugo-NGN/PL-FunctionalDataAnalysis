@@ -168,13 +168,25 @@ calculate_D1_matrix_parallel <- function(fd_obj, fine_grid) {
 
 ## -------------------------------- Dp-par -------------------------------------
 
-calculate_Dp_matrix_parallel <- function(fd_obj, fine_grid, omega) {
+calculate_Dp_matrix_parallel <- function(fd_obj, fine_grid, omega, STANDARDIZE = TRUE) {
   
   D0_matrix <- calculate_D0_matrix_parallel(fd_obj, fine_grid)
   D1_matrix <- calculate_D1_matrix_parallel(fd_obj, fine_grid)
   
-  Dp_matrix <- sqrt((1 - omega) * D0_matrix^2 + omega * D1_matrix^2)
+  if (STANDARDIZE){
+  # Standardisation de D0 et D1 avec min-max
+  D0_min <- min(D0_matrix)
+  D0_max <- max(D0_matrix)
+  D0_standardized <- (D0_matrix - D0_min) / (D0_max - D0_min)
   
+  D1_min <- min(D1_matrix)
+  D1_max <- max(D1_matrix)
+  D1_standardized <- (D1_matrix - D1_min) / (D1_max - D1_min)
+  
+  Dp_matrix <- sqrt((1 - omega) * D0_standardized^2 + omega * D1_standardized^2)
+  } else {
+    Dp_matrix <- sqrt((1 - omega) * D0_matrix^2 + omega * D1_matrix^2)
+  }
   return(Dp_matrix)
 }
 

@@ -1,19 +1,20 @@
-library(tidyverse)
 library(fda)
 library(stats)
-library(factoextra)
 library(plotly)
+library(cluster)
+library(tidyverse)
+library(factoextra)
 source("./utils/lissage.R")
 source("./utils/prepocess.R")
-source("./utils/distances_fonctionnelles.R")
+source("./utils/clustering.R")
 source("./utils/derive_fonctionnelle.R")
-
+source("./utils/distances_fonctionnelles.R")
 
 # ------------------------- Chargement des donnees  ----------------------------
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data, extract_n_data = 300)
+data <-preprocess(data, extract_n_data = 200)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -98,7 +99,7 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
 #D1_matrix <- readRDS("./data/D1_matrix.rds")
 
 ### -------------------- calcul D1 avec parallelisation ------------------------
-D1_matrix <- calculate_D1_matrix_parallel(fd_obj, fine_grid)
+system.time(D1_matrix <- calculate_D1_matrix_parallel(fd_obj, fine_grid))
 #saveRDS(D1_matrix, file="./data/D1_matrix_n1000.rds")
 #D1_matrix <- readRDS("./data/D1_matrix.rds")
 
@@ -138,33 +139,49 @@ plot_ly(z = ~Dp_matrix, type = "surface") %>%
   )
 # ------------------------------- Clustering -----------------------------------
 ## --------------------------------- CAH ---------------------------------------
-hc <- hclust(as.dist(D0_matrix), method = "complete")
+### ------------------------------ CAH  D0 -------------------------------------
+cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_obj)
 
-groups <- cutree(hc, k = 3)
+hc_D0 <- cah_silhouette_opti_D0$hc
 
-# Visualiser le dendrogramme avec les groupes
-fviz_dend(hc, k = 3,
-                cex = 0.6,
-                hang = -1,
-                rect = TRUE,
-                main = "Dendrogramme de la CAH")
-print(groups)
+plot(hc_D0,
+     main = "Dendrogramme de la CAH D0",
+     sub = "",
+     xlab = "",
+     hang = -1,
+     cex = 0.6)
 
-group_colors <- c("red", "blue", 'green')
+rect.hclust(hc_D0, k = cah_silhouette_opti_D0$k_optimal, border = "green")
 
-plot(fd_obj[[1]], col = group_colors[groups[1]], lty = 1,
-     main = "Courbes fonctionnelles par groupe",
-     ylab = "Célérité", xlab = "Profondeurs")
+### ------------------------------ CAH  D1 -------------------------------------
+cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_obj)
 
-for (i in 2:length(fd_obj)) {
-  lines(fd_obj[[i]], col = group_colors[groups[i]], lty = 1)
-}
+hc_D1 <- cah_silhouette_opti_D1$hc
 
-legend("topright", legend = paste("Groupe", 1:3), col = group_colors, lty = 1)
+plot(hc_D1,
+     main = "Dendrogramme de la CAH D1",
+     sub = "",
+     xlab = "",
+     hang = -1,
+     cex = 0.6)
+
+rect.hclust(hc_D1, k = cah_silhouette_opti_D1$k_optimal, border = "green")
+
+### ------------------------------ CAH  Dp -------------------------------------
+cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix, fd_obj)
+
+hc_Dp <- cah_silhouette_opti_Dp$hc
+
+plot(hc_Dp,
+     main = "Dendrogramme de la CAH Dp",
+     sub = "",
+     xlab = "",
+     hang = -1,
+     cex = 0.6)
+
+rect.hclust(hc_Dp, k = cah_silhouette_opti_Dp$k_optimal, border = "green")
 
 
-silhouette_score <- silhouette(groups, as.dist(D0_matrix))
-avg_silhouette_width <- mean(silhouette_score[, 3])
 
 ## ------------------------------ K MEANS --------------------------------------
 # Initialiser un vecteur pour stocker les coefficients de silhouette moyens
@@ -173,7 +190,7 @@ silhouette_scores <- numeric(9)
 # Boucle sur les valeurs de k de 2 à 10
 for (k in 2:10) {
   # Appliquer k-means
-  km_result <- kmeans(D0_matrix, centers = k, nstart = 25)
+  km_result <- kmeans(D1_matrix, centers = k, nstart = 25)
   
   # Calculer le coefficient de silhouette
   silhouette_score <- silhouette(km_result$cluster, as.dist(D0_matrix))
