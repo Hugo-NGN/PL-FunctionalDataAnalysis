@@ -8,7 +8,13 @@ davies.bouldin <- function(D_matrix, clusters) {
   return(db)
 }
 
-
+# ------------------------------ ARI score -------------------------------------
+compute_ARI <- function(cluster1, cluster2) {
+  if (length(cluster1) != length(cluster2)) {
+    stop("Les deux listes d'attributions doivent avoir la même longueur.")
+  }
+  return(adjustedRandIndex(cluster1, cluster2))
+}
 
 # --------------------------------- CAH ----------------------------------------
 ## --------------------------- CAH avec seuil ----------------------------------
@@ -105,7 +111,7 @@ cah_optimal_silhouette <- function(D_matrix, fd_obj) {
   
   
   return(list(hc = hc_optimal, sil_info = sil_info, avg_silhouette = sil_avg, 
-              db_score = db_score, groups = groups_optimal, k_optimal = optimal_k))
+              db_score = db_score, k_optimal = optimal_k, cluster = groups_optimal))
 }
 
 

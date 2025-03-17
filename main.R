@@ -1,5 +1,6 @@
 library(fda)
 library(stats)
+library(mclust)
 library(plotly)
 library(cluster)
 library(tidyverse)
@@ -205,6 +206,16 @@ k_Dp <- kmeans_optimal_k(Dp_matrix)
 kmeans_D0 <- kmeans_fd(D0_matrix, k_D0, fd_obj)
 kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_obj)
 kmeans_Dp <- kmeans_fd(Dp_matrix, k_Dp, fd_obj)
+
+
+
+
+## ------------------------------ ARI -------------------------------------------
+ARI_D0 <- compute_ARI(kmeans_D0$km_result$cluster, cah_silhouette_opti_D0$cluster)
+ARI_D1 <- compute_ARI(kmeans_D1$km_result$cluster, cah_silhouette_opti_D1$cluster)
+ARI_Dp <- compute_ARI(kmeans_Dp$km_result$cluster, cah_silhouette_opti_Dp$cluster)
+
+
 
 # ------------------------------ FIN -------------------------------------------
 
