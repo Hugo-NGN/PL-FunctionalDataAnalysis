@@ -1,5 +1,5 @@
 library(fda)
-
+library(parallel)
 # ------------------ VERSIONS SEQUENTIELLES (non parallelisees) ----------------
 ## -------------------------------- D0 -----------------------------------------
 calculate_D0_matrix <- function(fd_obj, fine_grid) {
@@ -75,7 +75,7 @@ calculate_Dp_matrix_givenD0D1 <- function(D0_matrix, D1_matrix, omega){
 
 # ------------------------ VERSIONS AVEC PARALLELISATION -----------------------
 ## -------------------------------- D0-par -------------------------------------
-library(parallel)
+
 calculate_D0_matrix_parallel <- function(fd_obj, fine_grid) {
   n <- length(fd_obj)
   D0_matrix <- matrix(0, nrow = n, ncol = n)
@@ -191,7 +191,22 @@ calculate_Dp_matrix_parallel <- function(fd_obj, fine_grid, omega, STANDARDIZE =
 }
 
 
-
+calculate_Dp_matrix_byD0D1 <- function(D0_matrix, D1_matrix, omega, STANDARDIZE = FALSE){
+  if (!STANDARDIZE){
+    return(sqrt((1-omega)*D0_matrix^2 + omega*D1_matrix^2))  
+  } else {
+    D0_min <- min(D0_matrix)
+    D0_max <- max(D0_matrix)
+    D0_standardized <- (D0_matrix - D0_min) / (D0_max - D0_min)
+    
+    D1_min <- min(D1_matrix)
+    D1_max <- max(D1_matrix)
+    D1_standardized <- (D1_matrix - D1_min) / (D1_max - D1_min)
+    
+    return(sqrt((1 - omega) * D0_standardized^2 + omega * D1_standardized^2))
+  }
+  
+}
 
 
 

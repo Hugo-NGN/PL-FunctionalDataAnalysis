@@ -54,10 +54,10 @@ cah_with_treshold <- function(D_matrix, height_threshold = 10){
 }
 
 ## ---------------------- CAH avec silhouette opti -----------------------------
-cah_optimal_silhouette <- function(D_matrix, fd_obj) {
+cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete") {
   # Calculer la silhouette moyenne pour différents nombres de clusters
   silhouette_scores <- sapply(2:5, function(k) {
-    hc <- hclust(as.dist(D_matrix), method = "complete")
+    hc <- hclust(as.dist(D_matrix), method = method)
     groups <- cutree(hc, k = k)
     silhouette_avg <- mean(silhouette(groups, as.dist(D_matrix))[, 3])
     return(silhouette_avg)
@@ -67,7 +67,7 @@ cah_optimal_silhouette <- function(D_matrix, fd_obj) {
   optimal_k <- which.max(silhouette_scores) + 1  
   
   # Effectue le clustering avec le nombre optimal de clusters
-  hc_optimal <- hclust(as.dist(D_matrix), method = "complete")
+  hc_optimal <- hclust(as.dist(D_matrix), method = method)
   groups_optimal <- cutree(hc_optimal, k = optimal_k)
   
   # Calcule les coefficients de silhouette
@@ -177,4 +177,54 @@ kmeans_fd <- function(D_matrix, k, fd_obj){
               avg_silhouette = sil_avg, db_score = db_score))
 }
 
+
+
+# ------------------------------- CAH + KMEANS ---------------------------------
+
+cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL) {
+  hc <- hclust(as.dist(D_matrix), method = "complete")
+  
+  cah_clusters <- cutree(hc, k = cut_tree)
+  
+  # Déterminer le nombre optimal de clusters pour K-means si non spécifié
+  if (is.null(kmeans_k)) {
+    silhouette_scores <- numeric(9)
+    for (k in 2:10) {
+      km_result <- kmeans(D_matrix, centers = k, nstart = 25)
+      silhouette_score <- silhouette(km_result$cluster, as.dist(D_matrix))
+      silhouette_scores[k - 1] <- mean(silhouette_score[, 3])
+    }
+    kmeans_k <- which.max(silhouette_scores) + 1
+  }
+  
+  print(paste("Nombre de clusters optimal pour K-means :", kmeans_k))
+  
+  # Appliquer K-means sur les 100 clusters CAH
+  km_result <- kmeans(D_matrix, centers = kmeans_k, nstart = 25)
+  
+  # Calcul du coefficient de silhouette moyen
+  sil_info <- silhouette(km_result$cluster, as.dist(D_matrix))
+  sil_avg <- mean(sil_info[, 3])
+  
+  # Calcul du score de Davies-Bouldin
+  db_score <- davies.bouldin(D_matrix, km_result$cluster)
+  
+  print(paste("Silhouette moyenne pour", kmeans_k, "clusters:", round(sil_avg, 2)))
+  print(paste("Score de Davies-Bouldin pour", kmeans_k, "clusters:", round(db_score, 2)))
+  
+  # Visualiser les courbes fonctionnelles par groupe
+  group_colors <- rainbow(kmeans_k)
+  plot(fd_obj[[1]], col = group_colors[km_result$cluster[1]], lty = 1,
+       main = "Courbes fonctionnelles par groupe",
+       ylab = "Célérité", xlab = "Profondeurs")
+  
+  for (i in 2:length(fd_obj)) {
+    lines(fd_obj[[i]], col = group_colors[km_result$cluster[i]], lty = 1)
+  }
+  
+  legend("topright", legend = paste("Groupe", 1:kmeans_k), col = group_colors, lty = 1)
+  
+  return(list(hc = hc, km_result = km_result, sil_info = sil_info,
+              avg_silhouette = sil_avg, db_score = db_score, cluster = km_result$cluster))
+}
 

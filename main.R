@@ -126,7 +126,9 @@ omega <- 0.5
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
 ### -------------------- calcul Dp avec parallelisation ------------------------
-system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = TRUE))
+system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = FALSE))
+system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = TRUE))
+
 #saveRDS(Dp_matrix, file="./data/Dp_matrix_omega05_n100.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
@@ -157,7 +159,7 @@ baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_euc
 
 ## --------------------------------- CAH ---------------------------------------
 ### ------------------------------ CAH  D0 -------------------------------------
-cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_obj)
+cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_obj, method ="complete")
 
 hc_D0 <- cah_silhouette_opti_D0$hc
 
@@ -171,7 +173,7 @@ plot(hc_D0,
 rect.hclust(hc_D0, k = cah_silhouette_opti_D0$k_optimal, border = "green")
 
 ### ------------------------------ CAH  D1 -------------------------------------
-cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_obj)
+cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_obj, method ="complete")
 
 hc_D1 <- cah_silhouette_opti_D1$hc
 
@@ -185,7 +187,7 @@ plot(hc_D1,
 rect.hclust(hc_D1, k = cah_silhouette_opti_D1$k_optimal, border = "green")
 
 ### ------------------------------ CAH  Dp -------------------------------------
-cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix, fd_obj)
+cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix, fd_obj, method = "complete")
 
 hc_Dp <- cah_silhouette_opti_Dp$hc
 
@@ -197,18 +199,6 @@ plot(hc_Dp,
      cex = 0.6)
 
 rect.hclust(hc_Dp, k = cah_silhouette_opti_Dp$k_optimal, border = "green")
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ## ------------------------------ K MEANS --------------------------------------
@@ -224,6 +214,13 @@ kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_obj)
 kmeans_Dp <- kmeans_fd(Dp_matrix, k_Dp, fd_obj)
 
 
+
+## -------------------------------- CAH + KMEANS ------------------------------
+
+
+hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_obj)
+hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_obj, kmeans_k = 2)
+hybride_classif_Dp <- cah_kmeans(Dp_matrix, fd_obj)
 
 
 ## ------------------- Comparaison classification ARI --------------------------
