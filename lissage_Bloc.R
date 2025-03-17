@@ -5,7 +5,7 @@ library(cluster)
 library(tidyverse)
 library(factoextra)
 source("./utils/lissage.R")
-source("./utils/prepocess.R")
+source("./utils/preprocess.R")
 source("./utils/clustering.R")
 source("./utils/derive_fonctionnelle.R")
 source("./utils/distances_fonctionnelles.R")
@@ -125,7 +125,7 @@ omega <- 0.5
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
 ### -------------------- calcul Dp avec parallelisation ------------------------
-Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega)
+system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = TRUE))
 #saveRDS(Dp_matrix, file="./data/Dp_matrix_omega05_n1000.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
@@ -183,6 +183,15 @@ rect.hclust(hc_Dp, k = cah_silhouette_opti_Dp$k_optimal, border = "green")
 
 
 
+
+
+
+
+
+
+
+
+
 ## ------------------------------ K MEANS --------------------------------------
 # Initialiser un vecteur pour stocker les coefficients de silhouette moyens
 silhouette_scores <- numeric(9)
@@ -224,5 +233,5 @@ for (i in 2:length(fd_obj)) {
 # Ajouter une légende
 legend("topright", legend = paste("Groupe", 1:2), col = group_colors, lty = 1)
 
-
+# ------------------------------ FIN -------------------------------------------
 
