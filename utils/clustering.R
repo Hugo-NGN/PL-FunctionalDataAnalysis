@@ -19,7 +19,18 @@ compute_ARI <- function(cluster1, cluster2) {
 # --------------------------------- CAH ----------------------------------------
 ## --------------------------- CAH avec seuil ----------------------------------
 # Effectuer le clustering hiérarchique
-cah_with_treshold <- function(D_matrix, height_threshold = 10){
+cah_with_treshold <- function(D_matrix, height_threshold = 10, SIMULATION = FALSE){
+  
+  if (!SIMULATION){
+    xlab <- "Profondeurs"
+    ylab <- "Célérité"
+    ylim = NULL
+  } else{
+    xlab <- "Age"
+    ylab <- "Taille"
+    ylim = range(-2,2)
+  }
+  
   hc <- hclust(as.dist(D_matrix), method = "complete")
   
   # Effectue le clustering avec le seuil
@@ -41,7 +52,7 @@ cah_with_treshold <- function(D_matrix, height_threshold = 10){
   group_colors <- rainbow(num_clusters)
   plot(fd_obj[[1]], col = group_colors[groups_optimal[1]], lty = 1,
        main = "Courbes fonctionnelles par groupe",
-       ylab = "Célérité", xlab = "Profondeurs")
+       ylab = ylab, xlab = xlab,ylim = ylim)
   
   for (i in 2:length(fd_obj)) {
     lines(fd_obj[[i]], col = group_colors[groups_optimal[i]], lty = 1)
@@ -54,8 +65,20 @@ cah_with_treshold <- function(D_matrix, height_threshold = 10){
 }
 
 ## ---------------------- CAH avec silhouette opti -----------------------------
-cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete", force_k= NULL) {
-  # Calculer la silhouette moyenne pour différents nombres de clusters
+cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete", force_k= NULL, SIMULATION = FALSE) {
+  
+  # Uniquement pour changer les noms des axes en fonction de la simulation
+  if (!SIMULATION){
+    xlab <- "Profondeurs"
+    ylab <- "Célérité"
+  } else{
+    xlab <- "x"
+    ylab <- "y"
+    ylim = range(-2,2)
+  }
+  
+  
+    # Calculer la silhouette moyenne pour différents nombres de clusters
   silhouette_scores <- sapply(2:5, function(k) {
     hc <- hclust(as.dist(D_matrix), method = method)
     groups <- cutree(hc, k = k)
@@ -102,7 +125,7 @@ cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete", force_k
   
   plot(fd_obj[[1]], col = group_colors[groups_optimal[1]], lty = 1,
        main = "Courbes fonctionnelles par groupe",
-       ylab = "Célérité", xlab = "Profondeurs")
+       ylab = ylab, xlab = xlab, ylim = ylim)
   
   for (i in 2:length(fd_obj)) {
     lines(fd_obj[[i]], col = group_colors[groups_optimal[i]], lty = 1)
@@ -149,7 +172,16 @@ kmeans_optimal_k <- function(D_matrix){
 }
 
 
-kmeans_fd <- function(D_matrix, k, fd_obj){
+kmeans_fd <- function(D_matrix, k, fd_obj, SIMULATION = FALSE) {
+  
+  if (!SIMULATION){
+    xlab <- "Profondeurs"
+    ylab <- "Célérité"
+  } else{
+    xlab <- "x"
+    ylab <- "y"
+    ylim = range(-2,2)
+  }
   
   km_result <- kmeans(D_matrix, centers = k, nstart = 25)
   
@@ -168,7 +200,7 @@ kmeans_fd <- function(D_matrix, k, fd_obj){
   group_colors <- rainbow(k)
   plot(fd_obj[[1]], col = group_colors[km_result$cluster[1]], lty = 1,
        main = "Courbes fonctionnelles par groupe",
-       ylab = "Célérité", xlab = "Profondeurs")
+       ylab = ylab, xlab = xlab,     ylim = ylim)
   
   for (i in 2:length(fd_obj)) {
     lines(fd_obj[[i]], col = group_colors[km_result$cluster[i]], lty = 1)
@@ -185,7 +217,17 @@ kmeans_fd <- function(D_matrix, k, fd_obj){
 
 # ------------------------------- CAH + KMEANS ---------------------------------
 
-cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL) {
+cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL, SIMULATION = FALSE) {
+  
+  if (!SIMULATION){
+    xlab <- "Profondeurs"
+    ylab <- "Célérité"
+  } else{
+    xlab <- "x"
+    ylab <- "y"
+    ylim = range(-2,2)
+  }
+  
   hc <- hclust(as.dist(D_matrix), method = "complete")
   
   cah_clusters <- cutree(hc, k = cut_tree)
@@ -220,7 +262,7 @@ cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL) {
   group_colors <- rainbow(kmeans_k)
   plot(fd_obj[[1]], col = group_colors[km_result$cluster[1]], lty = 1,
        main = "Courbes fonctionnelles par groupe",
-       ylab = "Célérité", xlab = "Profondeurs")
+       ylab = ylab, xlab = xlab,     ylim = ylim)
   
   for (i in 2:length(fd_obj)) {
     lines(fd_obj[[i]], col = group_colors[km_result$cluster[i]], lty = 1)
