@@ -128,6 +128,7 @@ omega <- 0.5
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
 ### -------------------- calcul Dp avec parallelisation ------------------------
+
 #system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = FALSE))
 system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = TRUE))
 
@@ -142,6 +143,8 @@ plot_ly(z = ~Dp_matrix_stdz, type = "surface") %>%
       zaxis = list(title = "Distance Dp")
     )
   )
+
+
 # ------------------------------- Clustering -----------------------------------
 
 ## ------------------------------ BASELINE -------------------------------------
@@ -159,8 +162,11 @@ baseline_db_score <- davies.bouldin(data, kmeans_eucli$cluster)
 # calcul du coefficient de silhouette
 baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_eucli_matrix))[, 3])
 
+
 ## --------------------------------- CAH ---------------------------------------
 ### ------------------------------ CAH  D0 -------------------------------------
+
+
 cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_obj, method ="complete")
 
 hc_D0 <- cah_silhouette_opti_D0$hc
@@ -177,6 +183,8 @@ rect.hclust(hc_D0,
             border = "green")
 
 ### ------------------------------ CAH  D1 -------------------------------------
+
+
 cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_obj, method ="complete")
 
 hc_D1 <- cah_silhouette_opti_D1$hc
@@ -191,7 +199,9 @@ plot(hc_D1,
 rect.hclust(hc_D1, k = cah_silhouette_opti_D1$k_optimal, border = "green")
 
 ### ------------------------------ CAH  Dp -------------------------------------
-cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix_stdz, fd_obj, method = "complete")
+
+
+ah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix_stdz, fd_obj, method = "complete")
 
 hc_Dp <- cah_silhouette_opti_Dp$hc
 
@@ -218,7 +228,6 @@ kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_obj)
 kmeans_Dp <- kmeans_fd(Dp_matrix_stdz, k_Dp, fd_obj)
 
 
-
 ## -------------------------------- CAH + KMEANS ------------------------------
 
 
@@ -228,12 +237,11 @@ hybride_classif_Dp <- cah_kmeans(Dp_matrix_stdz, fd_obj)
 
 
 ## ------------------- Comparaison classification ARI --------------------------
+
+
 ARI_D0 <- compute_ARI(kmeans_D0$km_result$cluster, cah_silhouette_opti_D0$cluster)
 ARI_D1 <- compute_ARI(kmeans_D1$km_result$cluster, cah_silhouette_opti_D1$cluster)
 ARI_Dp <- compute_ARI(kmeans_Dp$km_result$cluster, cah_silhouette_opti_Dp$cluster)
-
-
-
 
 
 # ------------------------------ FIN -------------------------------------------

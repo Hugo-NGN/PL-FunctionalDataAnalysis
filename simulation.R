@@ -2,7 +2,6 @@
 library(fda)
 library(cluster)
 library(tidyverse)
-
 source("./utils/clustering.R")
 source("./utils/distances_fonctionnelles.R")
 
@@ -14,6 +13,7 @@ data_growth <- fda::growth
 
 # ---------------------------- VISUALISATION -----------------------------------
 ## ----------------------------- Courbes M -------------------------------------
+
 matplot(data_growth$age,
         data_growth$hgtm,
         type="l",
@@ -24,6 +24,7 @@ matplot(data_growth$age,
 title("Courbes de croissance (M)")
 
 ## ----------------------------- Courbes F -------------------------------------
+
 matplot(data_growth$age,
         data_growth$hgtf,
         type="l",
@@ -95,9 +96,9 @@ fd_f_prime %>% matplot(type="l",
 # ---------------------------- MATRICE DES DISTANCES ---------------------------
 fine_grid <- seq(min(data_growth$age), max(data_growth$age), length.out = 1000)
 
-D0_matrix <- calculate_D0_matrix_parallel(fd_list, fine_grid=fine_grid)
-D1_matrix <- calculate_D1_matrix_parallel(fd_list, fine_grid=fine_grid)
-Dp_matrix <- calculate_Dp_matrix_parallel(fd_list, fine_grid=fine_grid, omega= 0.5)
+D0_matrix <- calculate_D0_matrix(fd_list, fine_grid=fine_grid)
+D1_matrix <- calculate_D1_matrix(fd_list, fine_grid=fine_grid)
+Dp_matrix <- calculate_Dp_matrix_byD0D1(D0_matrix, D1_matrix, omega= 0.5, STANDARDIZE=TRUE)
 
 
 
@@ -143,7 +144,7 @@ silhouette_score_Dp_kmean <- mean(silhouette(kmeans_Dp$cluster, as.dist(Dp_matri
 
 ## ----------------------- CAH fonctionnelle -----------------------------------
 ### ----------------------------- D0 -------------------------------------------
-cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_list, method ="complete")
+cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_list, method ="complete", SIMULATION = TRUE)
 #cah_silhouette_opti_D0_wardD <- cah_optimal_silhouette(D0_matrix, fd_list, method ="ward.D")
 #cah_silhouette_opti_D0_wardD2 <- cah_optimal_silhouette(D0_matrix, fd_list, method ="ward.D2")
 
@@ -162,7 +163,7 @@ rect.hclust(hc_D0,
             border = "green")
 
 ### ----------------------------- D1 -------------------------------------------
-cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_list, method ="complete")
+cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_list, method ="complete", SIMULATION = TRUE)
 #cah_silhouette_opti_D1_wardD <- cah_optimal_silhouette(D1_matrix, fd_list, method ="ward.D")
 #cah_silhouette_opti_D1_wardD2 <- cah_optimal_silhouette(D1_matrix, fd_list, method ="ward.D2")
 
@@ -178,7 +179,7 @@ plot(hc_D1,
 rect.hclust(hc_D1, k = 2, border = "green")
 
 ### ----------------------------- Dp -------------------------------------------
-cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix, fd_list, method = "complete", force_k=2)
+cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix, fd_list, method="complete", force_k=2, SIMULATION = TRUE)
 
 hc_Dp <- hclust(as.dist(Dp_matrix), method = "complete")
 
@@ -193,9 +194,9 @@ rect.hclust(hc_Dp, k = 2, border = "green")
 
 ## ---------------------- CAH + K-MEANS fonctionnel ----------------------------
 
-hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_list, cut_tree = 20)
-hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_list, cut_tree = 20)
-hybride_classif_Dp <- cah_kmeans(Dp_matrix, fd_list,cut_tree = 20, kmeans_k = 2)
+hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_list, cut_tree = 20, SIMULATION = TRUE)
+hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_list, cut_tree = 20, SIMULATION = TRUE)
+hybride_classif_Dp <- cah_kmeans(Dp_matrix, fd_list,cut_tree = 20, kmeans_k = 2, SIMULATION = TRUE)
 
 # ---------------------------- RESULTATS ---------------------------------------
 # Vrais labels (sexe: H/F)
