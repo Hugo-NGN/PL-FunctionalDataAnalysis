@@ -15,7 +15,7 @@ source("./utils/distances_fonctionnelles.R")
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data, extract_n_data = 200)
+data <-preprocess(data, extract_n_data = 1000)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -56,8 +56,10 @@ for (i in seq(1, length(fd_obj))){
 
 #deriv_list <- readRDS("./data/fdata_deriv.rds")
 
-plot(fine_grid, deriv_list[[1]], type ="l", col = 1, lty = 1, main = "Dérivés des profils(bloc 47)",
-     ylab = "Dérivés de la célérité/profondeur", xlab = "Profondeurs")
+plot(fine_grid, deriv_list[[1]], type ="l", col = 1, lty = 1,
+     main = "Dérivés des profils (bloc 47)",
+     ylab = "Dérivés de la célérité/profondeur",
+     xlab = "Profondeurs")
 
 for (i in 2:length(fd_obj)) {
   lines(deriv_list[[i]], col = i, lty = 1)
@@ -126,13 +128,13 @@ omega <- 0.5
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
 ### -------------------- calcul Dp avec parallelisation ------------------------
-system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = FALSE))
+#system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = FALSE))
 system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = TRUE))
 
-#saveRDS(Dp_matrix, file="./data/Dp_matrix_omega05_n100.rds")
+#saveRDS(Dp_matrix_stdz, file="./data/Dp_matrix_omega05_n1000.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
-plot_ly(z = ~Dp_matrix, type = "surface") %>%
+plot_ly(z = ~Dp_matrix_stdz, type = "surface") %>%
   layout(
     scene = list(
       xaxis = list(title = "Profil"),
@@ -170,7 +172,9 @@ plot(hc_D0,
      hang = -1,
      cex = 0.6)
 
-rect.hclust(hc_D0, k = cah_silhouette_opti_D0$k_optimal, border = "green")
+rect.hclust(hc_D0,
+            k = cah_silhouette_opti_D0$k_optimal,
+            border = "green")
 
 ### ------------------------------ CAH  D1 -------------------------------------
 cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_obj, method ="complete")
@@ -187,7 +191,7 @@ plot(hc_D1,
 rect.hclust(hc_D1, k = cah_silhouette_opti_D1$k_optimal, border = "green")
 
 ### ------------------------------ CAH  Dp -------------------------------------
-cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix, fd_obj, method = "complete")
+cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix_stdz, fd_obj, method = "complete")
 
 hc_Dp <- cah_silhouette_opti_Dp$hc
 
@@ -206,12 +210,12 @@ rect.hclust(hc_Dp, k = cah_silhouette_opti_Dp$k_optimal, border = "green")
 # choix du k pour maximiser le coeff de Silhouette
 k_D0 <- kmeans_optimal_k(D0_matrix)
 k_D1 <- kmeans_optimal_k(D1_matrix)
-k_Dp <- kmeans_optimal_k(Dp_matrix)
+k_Dp <- kmeans_optimal_k(Dp_matrix_stdz)
 
 # clustering avec kmeans
 kmeans_D0 <- kmeans_fd(D0_matrix, k_D0, fd_obj)
 kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_obj)
-kmeans_Dp <- kmeans_fd(Dp_matrix, k_Dp, fd_obj)
+kmeans_Dp <- kmeans_fd(Dp_matrix_stdz, k_Dp, fd_obj)
 
 
 
@@ -219,8 +223,8 @@ kmeans_Dp <- kmeans_fd(Dp_matrix, k_Dp, fd_obj)
 
 
 hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_obj)
-hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_obj, kmeans_k = 2)
-hybride_classif_Dp <- cah_kmeans(Dp_matrix, fd_obj)
+hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_obj)
+hybride_classif_Dp <- cah_kmeans(Dp_matrix_stdz, fd_obj)
 
 
 ## ------------------- Comparaison classification ARI --------------------------
