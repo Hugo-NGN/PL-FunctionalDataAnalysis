@@ -54,7 +54,7 @@ cah_with_treshold <- function(D_matrix, height_threshold = 10){
 }
 
 ## ---------------------- CAH avec silhouette opti -----------------------------
-cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete") {
+cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete", force_k= NULL) {
   # Calculer la silhouette moyenne pour différents nombres de clusters
   silhouette_scores <- sapply(2:5, function(k) {
     hc <- hclust(as.dist(D_matrix), method = method)
@@ -65,6 +65,10 @@ cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete") {
   
   # Trouve le nombre de clusters qui maximise la silhouette moyenne
   optimal_k <- which.max(silhouette_scores) + 1  
+  
+  if (!is.null(force_k)) {
+    optimal_k <- force_k
+  }
   
   # Effectue le clustering avec le nombre optimal de clusters
   hc_optimal <- hclust(as.dist(D_matrix), method = method)
