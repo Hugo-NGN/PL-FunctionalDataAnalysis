@@ -15,7 +15,7 @@ source("./utils/distances_fonctionnelles.R")
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data, extract_n_data = 1000)
+data <-preprocess(data, extract_n_data = 100)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -37,18 +37,18 @@ D <- 30
 z <- as.numeric(colnames(data))
 
 #lissage B-spline
-fd_obj <- spline_lissage_bloc_quantile(data, l_grille, D, z)
+fd_list <- spline_lissage_bloc_quantile(data, l_grille, D, z)
 
 # sauvegarde du lissage
-#saveRDS(fd_obj, file = "./data/fdata.rds")
+#saveRDS(fd_list, file = "./data/fdata.rds")
 
-#fd_obj <- readRDS("./data/fdata.rds")
+#fd_list <- readRDS("./data/fdata.rds")
 ## ------------------------ Affichage courbes lisses ---------------------------
-plot(fd_obj[[1]], col = 1, lty = 1, main = "Profils lissés (bloc 47)",
+plot(fd_list[[1]], col = 1, lty = 1, main = "Profils lissés (bloc 47)",
      ylab = "Célérité", xlab = "Profondeurs")
 
-for (i in 2:length(fd_obj)) {
-  lines(fd_obj[[i]], col = i, lty = 1)
+for (i in 2:length(fd_list)) {
+  lines(fd_list[[i]], col = i, lty = 1)
 }
 
 
@@ -58,8 +58,8 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
                  length.out = 10000)
 
 deriv_list = list()
-for (i in seq(1, length(fd_obj))){
-  deriv_list[[i]] <- eval.fd(fine_grid, fd_obj[[i]], Lfdobj=1)
+for (i in seq(1, length(fd_list))){
+  deriv_list[[i]] <- eval.fd(fine_grid, fd_list[[i]], Lfdobj=1)
 }
 
 #saveRDS(deriv_list, file = "./data/fdata_deriv.rds")
@@ -71,7 +71,7 @@ plot(fine_grid, deriv_list[[1]], type ="l", col = 1, lty = 1,
      ylab = "Dérivés de la célérité/profondeur",
      xlab = "Profondeurs")
 
-for (i in 2:length(fd_obj)) {
+for (i in 2:length(fd_list)) {
   lines(deriv_list[[i]], col = i, lty = 1)
 }
 
@@ -83,12 +83,12 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
                  length.out = 1000)
 
 ### ----------------------- calcul D0 sequentiellement ------------------------- 
-#system.time(D0_matrix <- calculate_D0_matrix(fd_obj, fine_grid))
+#system.time(D0_matrix <- calculate_D0_matrix(fd_list, fine_grid))
 # saveRDS(D0_matrix, file="./data/D0_matrix.rds")
 #D0_matrix <- readRDS("./data/D0_matrix.rds")
 
 ### -------------------- calcul D0 avec parallelisation ------------------------
-system.time(D0_matrix <- calculate_D0_matrix_parallel(fd_obj, fine_grid))
+system.time(D0_matrix <- calculate_D0_matrix_parallel(fd_list, fine_grid))
 #saveRDS(D0_matrix, file="./data/D0_matrix_n1000.rds")
 #D0_matrix <- readRDS("./data/D0_matrix.rds")
 
@@ -107,12 +107,12 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
                  max(as.numeric(colnames(data))),
                  length.out = 1000)
 ### ----------------------- calcul D1 sequentiellement -------------------------
-# D1_matrix <- calculate_D1_matrix(fd_obj, fine_grid)
+# D1_matrix <- calculate_D1_matrix(fd_list, fine_grid)
 # saveRDS(D1_matrix, file="./data/D1_matrix.rds")
 #D1_matrix <- readRDS("./data/D1_matrix.rds")
 
 ### -------------------- calcul D1 avec parallelisation ------------------------
-system.time(D1_matrix <- calculate_D1_matrix_parallel(fd_obj, fine_grid))
+system.time(D1_matrix <- calculate_D1_matrix_parallel(fd_list, fine_grid))
 #saveRDS(D1_matrix, file="./data/D1_matrix_n1000.rds")
 #D1_matrix <- readRDS("./data/D1_matrix.rds")
 
@@ -133,14 +133,14 @@ fine_grid <- seq(min(as.numeric(colnames(data))),
 
 omega <- 0.5
 ### ----------------------- calcul Dp sequentiellement -------------------------
-# Dp_matrix <- calculate_Dp_matrix(fd_obj, fine_grid, omega)
+# Dp_matrix <- calculate_Dp_matrix(fd_list, fine_grid, omega)
 # saveRDS(Dp_matrix, file="./data/D0_matrix.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
 
 ### -------------------- calcul Dp avec parallelisation ------------------------
 
-#system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = FALSE))
-system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_obj, fine_grid, omega, STANDARDIZE = TRUE))
+#system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega, STANDARDIZE = FALSE))
+system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega, STANDARDIZE = TRUE))
 
 #saveRDS(Dp_matrix_stdz, file="./data/Dp_matrix_omega05_n1000.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
@@ -177,7 +177,7 @@ baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_euc
 ### ------------------------------ CAH  D0 -------------------------------------
 
 
-cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_obj, method ="complete")
+cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_list, method ="complete")
 
 hc_D0 <- cah_silhouette_opti_D0$hc
 
@@ -195,7 +195,7 @@ rect.hclust(hc_D0,
 ### ------------------------------ CAH  D1 -------------------------------------
 
 
-cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_obj, method ="complete")
+cah_silhouette_opti_D1 <- cah_optimal_silhouette(D1_matrix, fd_list, method ="complete")
 
 hc_D1 <- cah_silhouette_opti_D1$hc
 
@@ -211,7 +211,7 @@ rect.hclust(hc_D1, k = cah_silhouette_opti_D1$k_optimal, border = "green")
 ### ------------------------------ CAH  Dp -------------------------------------
 
 
-ah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix_stdz, fd_obj, method = "complete")
+cah_silhouette_opti_Dp <- cah_optimal_silhouette(Dp_matrix_stdz, fd_list, method = "complete")
 
 hc_Dp <- cah_silhouette_opti_Dp$hc
 
@@ -233,17 +233,17 @@ k_D1 <- kmeans_optimal_k(D1_matrix)
 k_Dp <- kmeans_optimal_k(Dp_matrix_stdz)
 
 # clustering avec kmeans
-kmeans_D0 <- kmeans_fd(D0_matrix, k_D0, fd_obj)
-kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_obj)
-kmeans_Dp <- kmeans_fd(Dp_matrix_stdz, k_Dp, fd_obj)
+kmeans_D0 <- kmeans_fd(D0_matrix, k_D0, fd_list)
+kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_list)
+kmeans_Dp <- kmeans_fd(Dp_matrix_stdz, k_Dp, fd_list)
 
 
 ## -------------------------------- CAH + KMEANS ------------------------------
 
 
-hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_obj)
-hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_obj)
-hybride_classif_Dp <- cah_kmeans(Dp_matrix_stdz, fd_obj)
+hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_list)
+hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_list)
+hybride_classif_Dp <- cah_kmeans(Dp_matrix_stdz, fd_list)
 
 
 ## ------------------- Comparaison classification ARI --------------------------

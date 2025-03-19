@@ -1,4 +1,5 @@
 library(fda)
+library(mclust)
 library(quantmod)
 source("./utils/clustering.R")
 source("./utils/distances_fonctionnelles.R")
@@ -9,25 +10,26 @@ n <- 100  # Nombre de trajectoires
 T <- 1    # Intervalle de temps
 dt <- 0.01  # Pas de temps
 time <- seq(0, T, by = dt)
-x <- 2  # Valeur à atteindre à T
+mu <- 1  # Drift
+sigma <- 0.2  # Volatilité
 
 #------------------------------ Simulation -------------------------------------
 
-## ------------------------ Pont Brownien de 0 à 2 ------------------------------
-# Générer 100 ponts browniens allant de 0 à 2
+## ------------------------ Mouvement Brownien Géométrique ---------------------
+# Générer 100 mouvements browniens géométriques
 set.seed(123)  # Pour la reproductibilité
-p2_brownien <- matrix(nrow = length(time), ncol = n)
+gbm <- matrix(nrow = length(time), ncol = n)
 
 for (i in 1:n) {
   # Générer un mouvement brownien standard
   brownian_path <- cumsum(rnorm(length(time) - 1, mean = 0, sd = sqrt(dt)))
   brownian_path <- c(0, brownian_path)
   
-  # Transformer en pont brownien allant de 0 à x
-  brownian_bridge <- brownian_path + (time / T) * (x - brownian_path[length(time)])
+  # Transformer en mouvement brownien géométrique
+  gbm_path <- exp((mu - 0.5 * sigma^2) * time + sigma * brownian_path) - 1
   
   # Stocker la trajectoire
-  p2_brownien[, i] <- brownian_bridge
+  gbm[, i] <- gbm_path
 }
 
 ## ---------------------------- Pont Brownien ----------------------------------
@@ -48,33 +50,33 @@ for (i in 1:n) {
 }
 
 ## -------------------- concaténation des données ------------------------------
-data <- cbind(p2_brownien, p_brownien)
-true_labels <- c(rep("t", ncol(p2_brownien)), rep("p", ncol(p_brownien)))
+data <- cbind(gbm, p_brownien)
+true_labels <- c(rep("gbm", ncol(gbm)), rep("p", ncol(p_brownien)))
 
 ## ---------------------- Visualisation des trajectoires -----------------------
-plot(time, p2_brownien[, 1], type = "l", col = rgb(0, 0, 1, alpha = 0.1),
-     ylim = range(p2_brownien, p_brownien, na.rm = TRUE),
-     main = "Trajectoires de Ponts Browniens de 0 à 2 et Ponts Browniens",
+plot(time, gbm[, 1], type = "l", col = rgb(0, 0, 1, alpha = 0.1),
+     ylim = range(gbm, p_brownien, na.rm = TRUE),
+     main = "Trajectoires de Mouvements Browniens Géométriques et Ponts Browniens",
      xlab = "Temps", ylab = "Valeur")
 
 for (i in 2:n) {
-  lines(time, p2_brownien[, i], col = rgb(0, 0, 1, alpha = 0.1), lwd=1)
+  lines(time, gbm[, i], col = rgb(0, 0, 1, alpha = 0.1), lwd=1)
 }
 
 for (i in 1:n) {
   lines(time, p_brownien[, i], col = rgb(1, 0, 0, alpha = 0.1), lwd=1)
 }
 
-legend("topright", legend = c("Pont Brownien de 0 à 2", "Pont Brownien"),
+legend("topright", legend = c("Mouvement Brownien Géométrique", "Pont Brownien"),
        col = c(rgb(0, 0, 1, alpha = 0.5), rgb(1, 0, 0, alpha = 0.5)), lty = 1, lwd = 3)
 
 # -------------------------------- Lissage -------------------------------------
 
 basis <- create.bspline.basis(rangeval = range(time), nbasis = 10)
 
-fd_t <- list()
-for (i in 1:ncol(p2_brownien)) {
-  fd_t[[i]] <- smooth.basis(time, p2_brownien[, i], basis)$fd
+fd_gbm <- list()
+for (i in 1:ncol(gbm)) {
+  fd_gbm[[i]] <- smooth.basis(time, gbm[, i], basis)$fd
 }
 
 fd_p <- list()
@@ -102,15 +104,32 @@ for (i in 1:length(fd_p)) {
   lines(fd_p[[i]], col = rgb(1, 0, 0, alpha = 0.1))
 }
 
-legend("topright", legend = c("Pont Brownien de 0 à 2", "Pont Brownien"),
+legend("topright", legend = c("Mouvement Brownien Géométrique", "Pont Brownien"),
        col = c(rgb(0, 0, 1, alpha = 0.5), rgb(1, 0, 0, alpha = 0.5)), lty = 1, lwd = 2)
 
 # ------------------------------- CLASSIFICATION -------------------------------
 
+## ------------------------------ Baseline model -------------------------------
+
+D_eucli_matrix <- as.matrix(dist(t(data), method = "euclidean"))
+
+k_optimal <- kmeans_optimal_k(as.dist(D_eucli_matrix))
+kmeans_eucli <- kmeans(D_eucli_matrix, centers = k_optimal, nstart = 25)
+
+# calcul du score de Davies Bouldin
+baseline_db_score <- davies.bouldin(t(data), kmeans_eucli$cluster)
+# calcul du coefficient de silhouette
+baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_eucli_matrix))[, 3])
+
 ## ------------------------- Matrices de distances -----------------------------
-D0_matrix <- calculate_D0_matrix(fd_list, time)
-D1_matrix <- calculate_D1_matrix(fd_list, time)
-Dp_matrix <- calculate_Dp_matrix(fd_list, time, omega = 0.5)
+fine_grid <- time
+
+# Rq: les fonctions avec parrellelisation doivent avoir comme argument des objet 
+# nommés "fd_list" et "fine_grid" spécifiquement
+
+D0_matrix <- calculate_D0_matrix_parallel(fd_list, fine_grid)
+D1_matrix <- calculate_D1_matrix_parallel(fd_list, fine_grid)
+Dp_matrix <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega = 0.5, STANDARDIZE = TRUE)
 
 ## -------------------------------- baseline -----------------------------------
 # Matrice de distance euclidienne des profils
@@ -185,11 +204,5 @@ cat("ARI CAH + K-means D1:", ari_D1_hybride, "\n")
 ari_Dp_hybride <- adjustedRandIndex(true_labels, hybride_classif_Dp$km_result$cluster)
 cat("ARI CAH + K-means Dp:", ari_Dp_hybride, "\n")
 
-
-
-
-
-
-
-
-
+ari_baseline <- adjustedRandIndex(true_labels, kmeans_eucli$cluster)
+cat("ARI Baseline:", ari_baseline, "\n")

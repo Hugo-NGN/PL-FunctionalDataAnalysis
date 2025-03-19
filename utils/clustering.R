@@ -71,6 +71,7 @@ cah_optimal_silhouette <- function(D_matrix, fd_obj, method ="complete", force_k
   if (!SIMULATION){
     xlab <- "Profondeurs"
     ylab <- "Célérité"
+    ylim = NULL
   } else{
     xlab <- "x"
     ylab <- "y"
@@ -177,6 +178,7 @@ kmeans_fd <- function(D_matrix, k, fd_obj, SIMULATION = FALSE) {
   if (!SIMULATION){
     xlab <- "Profondeurs"
     ylab <- "Célérité"
+    ylim = NULL
   } else{
     xlab <- "x"
     ylab <- "y"
@@ -222,6 +224,7 @@ cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL, SIMUL
   if (!SIMULATION){
     xlab <- "Profondeurs"
     ylab <- "Célérité"
+    ylim = NULL
   } else{
     xlab <- "x"
     ylab <- "y"
