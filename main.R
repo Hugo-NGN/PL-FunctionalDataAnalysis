@@ -20,6 +20,16 @@ data <-preprocess(data, extract_n_data = 1000)
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
 
+
+## ---------------------------- Visualisation ----------------------------------
+
+x_values <- as.numeric(colnames(data))
+# Tracer les courbes
+matplot(x_values, t(data), type = "l", lty = 1, col = rainbow(1000), xaxt = "n", ylab ="Célérité", xlab="Profondeur")
+title("Courbes des profils")
+axis(1, at = x_values, labels = colnames(data), las = 2)
+
+
 # -------------------------------- Lissage  ------------------------------------
 #definition des variables utiles pour le lissage
 l_grille = 10^seq(-3, 5, length.out = 1000)
