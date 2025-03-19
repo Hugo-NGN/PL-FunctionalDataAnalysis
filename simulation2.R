@@ -107,6 +107,29 @@ for (i in 1:length(fd_p)) {
 legend("topright", legend = c("Mouvement Brownien Géométrique", "Pont Brownien"),
        col = c(rgb(0, 0, 1, alpha = 0.5), rgb(1, 0, 0, alpha = 0.5)), lty = 1, lwd = 2)
 
+## --------------------- Calcul et visualisation des dérivées ------------------
+
+# Calcul des dérivées
+deriv_gbm <- lapply(fd_gbm, deriv.fd)
+deriv_p <- lapply(fd_p, deriv.fd)
+
+# Visualisation des dérivées
+plot(deriv_gbm[[1]], col = rgb(0, 0, 1, alpha = 0.1), ylab = "Dérivée",
+     main = "Dérivées des Trajectoires",
+     ylim = range(unlist(lapply(deriv_gbm, eval.fd, time)),
+                  unlist(lapply(deriv_p, eval.fd, time))))
+
+for (i in 2:length(deriv_gbm)) {
+  lines(deriv_gbm[[i]], col = rgb(0, 0, 1, alpha = 0.1))
+}
+
+for (i in 1:length(deriv_p)) {
+  lines(deriv_p[[i]], col = rgb(1, 0, 0, alpha = 0.1))
+}
+
+legend("topright", legend = c("Dérivée Mouvement Brownien Géométrique", "Dérivée Pont Brownien"),
+       col = c(rgb(0, 0, 1, alpha = 0.5), rgb(1, 0, 0, alpha = 0.5)), lty = 1, lwd = 2)
+
 # ------------------------------- CLASSIFICATION -------------------------------
 
 ## ------------------------------ Baseline model -------------------------------
@@ -131,20 +154,6 @@ D0_matrix <- calculate_D0_matrix_parallel(fd_list, fine_grid)
 D1_matrix <- calculate_D1_matrix_parallel(fd_list, fine_grid)
 Dp_matrix <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega = 0.5, STANDARDIZE = TRUE)
 
-## -------------------------------- baseline -----------------------------------
-# Matrice de distance euclidienne des profils
-D_eucli_matrix <- as.matrix(dist(data, method = "euclidean"))
-
-k_optimal <- kmeans_optimal_k(as.dist(D_eucli_matrix))
-
-kmeans_eucli <- kmeans(D_eucli_matrix, centers = k_optimal, nstart = 25)
-
-# calcul du score de Davies Bouldin
-baseline_db_score <- davies.bouldin(data, kmeans_eucli$cluster)
-
-# calcul du coefficient de silhouette
-baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_eucli_matrix))[, 3])
-
 ## ------------------------- Clustering hiérarchique ---------------------------
 cah_silhouette_opti_D0 <- cah_optimal_silhouette(D0_matrix, fd_list, method = "complete", SIMULATION = TRUE)
 hc_D0 <-  hclust(as.dist(D0_matrix), method = "complete")
@@ -163,6 +172,26 @@ k_optimal_Dp <- kmeans_optimal_k(Dp_matrix)
 kmeans_D0 <- kmeans(D0_matrix, centers = k_optimal_D0, nstart = 25)
 kmeans_D1 <- kmeans(D1_matrix, centers = k_optimal_D1, nstart = 25)
 kmeans_Dp <- kmeans(Dp_matrix, centers = k_optimal_Dp, nstart = 25)
+
+
+# Calcul et affichage des scores pour D0
+silhouette_D0 <- mean(silhouette(kmeans_D0$cluster, as.dist(D0_matrix))[, 3])
+db_score_D0 <- davies.bouldin(as.matrix(D0_matrix), kmeans_D0$cluster)
+cat("Score de Silhouette moyen pour D0:", silhouette_D0, "\n")
+cat("Score de Davies-Bouldin pour D0:", db_score_D0, "\n")
+
+# Calcul et affichage des scores pour D1
+silhouette_D1 <- mean(silhouette(kmeans_D1$cluster, as.dist(D1_matrix))[, 3])
+db_score_D1 <- davies.bouldin(as.matrix(D1_matrix), kmeans_D1$cluster)
+cat("Score de Silhouette moyen pour D1:", silhouette_D1, "\n")
+cat("Score de Davies-Bouldin pour D1:", db_score_D1, "\n")
+
+# Calcul et affichage des scores pour Dp
+silhouette_Dp <- mean(silhouette(kmeans_Dp$cluster, as.dist(Dp_matrix))[, 3])
+db_score_Dp <- davies.bouldin(as.matrix(Dp_matrix), kmeans_Dp$cluster)
+cat("Score de Silhouette moyen pour Dp:", silhouette_Dp, "\n")
+cat("Score de Davies-Bouldin pour Dp:", db_score_Dp, "\n")
+
 
 ## ------------------------- classification hybride ----------------------------
 hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_list, cut_tree = 20, SIMULATION = TRUE)

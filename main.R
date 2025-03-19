@@ -15,7 +15,7 @@ source("./utils/distances_fonctionnelles.R")
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data, extract_n_data = 100)
+data <-preprocess(data, extract_n_data = 1000)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -140,7 +140,7 @@ omega <- 0.5
 ### -------------------- calcul Dp avec parallelisation ------------------------
 
 #system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega, STANDARDIZE = FALSE))
-system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega, STANDARDIZE = TRUE))
+system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega = 0.2, STANDARDIZE = TRUE))
 
 #saveRDS(Dp_matrix_stdz, file="./data/Dp_matrix_omega05_n1000.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
@@ -237,6 +237,24 @@ kmeans_D0 <- kmeans_fd(D0_matrix, k_D0, fd_list)
 kmeans_D1 <- kmeans_fd(D1_matrix, k_D1, fd_list)
 kmeans_Dp <- kmeans_fd(Dp_matrix_stdz, k_Dp, fd_list)
 
+
+# Calcul et affichage des scores pour D0
+silhouette_D0 <- mean(silhouette(kmeans_D0$km_result$cluster, as.dist(D0_matrix))[, 3])
+db_score_D0 <- davies.bouldin(as.matrix(D0_matrix), kmeans_D0$km_result$cluster)
+cat("Score de Silhouette moyen pour D0:", silhouette_D0, "\n")
+cat("Score de Davies-Bouldin pour D0:", db_score_D0, "\n")
+
+# Calcul et affichage des scores pour D1
+silhouette_D1 <- mean(silhouette(kmeans_D1$km_result$cluster, as.dist(D1_matrix))[, 3])
+db_score_D1 <- davies.bouldin(as.matrix(D1_matrix), kmeans_D1$km_result$cluster)
+cat("Score de Silhouette moyen pour D1:", silhouette_D1, "\n")
+cat("Score de Davies-Bouldin pour D1:", db_score_D1, "\n")
+
+# Calcul et affichage des scores pour Dp
+silhouette_Dp <- mean(silhouette(kmeans_Dp$km_result$cluster, as.dist(Dp_matrix_stdz))[, 3])
+db_score_Dp <- davies.bouldin(as.matrix(Dp_matrix_stdz), kmeans_Dp$km_result$cluster)
+cat("Score de Silhouette moyen pour Dp:", silhouette_Dp, "\n")
+cat("Score de Davies-Bouldin pour Dp:", db_score_Dp, "\n")
 
 ## -------------------------------- CAH + KMEANS ------------------------------
 
