@@ -26,8 +26,8 @@ cah_with_treshold <- function(D_matrix, height_threshold = 10, SIMULATION = FALS
     ylab <- "Célérité"
     ylim = NULL
   } else{
-    xlab <- "Age"
-    ylab <- "Taille"
+    xlab <- "x"
+    ylab <- "y"
     ylim = range(-2,2)
   }
   
