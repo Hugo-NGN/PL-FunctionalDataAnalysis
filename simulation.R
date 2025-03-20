@@ -139,10 +139,20 @@ D_eucli_matrix <- as.matrix(dist(t(data), method = "euclidean"))
 k_optimal <- kmeans_optimal_k(as.dist(D_eucli_matrix))
 kmeans_eucli <- kmeans(D_eucli_matrix, centers = k_optimal, nstart = 25)
 
-# calcul du score de Davies Bouldin
-baseline_db_score <- davies.bouldin(t(data), kmeans_eucli$cluster)
-# calcul du coefficient de silhouette
-baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_eucli_matrix))[, 3])
+kmean_baseline_db_score <- davies.bouldin(t(data), kmeans_eucli$cluster)
+kmean_baseline_silhouette_score <- mean(silhouette(kmeans_eucli$cluster, as.dist(D_eucli_matrix))[, 3])
+cat("Score de Silhouette moyen pour le modèle de base:", kmean_baseline_silhouette_score, "\n")
+cat("Score de Davies-Bouldin pour le modèle de base:", kmean_baseline_db_score, "\n")
+cat("ARI Baseline:", adjustedRandIndex(true_labels, kmeans_eucli$cluster), "\n")
+
+hc_baseline <- cah_optimal_silhouette(D_eucli_matrix, fd_list, method = "ward.D2", SIMULATION = TRUE)$hc
+ari_hc_baseline <- adjustedRandIndex(true_labels, cutree(hc_baseline, 2))
+cat("ARI CAH Baseline:", ari_hc_baseline, "\n")
+
+
+hybride_baseline <- cah_kmeans(D_eucli_matrix, fd_list, cut_tree = 20, SIMULATION = TRUE)
+ari_hybride_baseline <- adjustedRandIndex(true_labels, hybride_baseline$km_result$cluster)
+cat("ARI CAH + K-means Baseline:", ari_hybride_baseline, "\n")
 
 ## ------------------------- Matrices de distances -----------------------------
 fine_grid <- time
@@ -233,5 +243,23 @@ cat("ARI CAH + K-means D1:", ari_D1_hybride, "\n")
 ari_Dp_hybride <- adjustedRandIndex(true_labels, hybride_classif_Dp$km_result$cluster)
 cat("ARI CAH + K-means Dp:", ari_Dp_hybride, "\n")
 
-ari_baseline <- adjustedRandIndex(true_labels, kmeans_eucli$cluster)
-cat("ARI Baseline:", ari_baseline, "\n")
+
+
+
+
+
+# ----------------------------- SCORE MAXIMUMS ---------------------------------
+
+numeric_labels <- as.numeric(factor(true_labels))
+
+
+silhouette_avg <- mean(silhouette(numeric_labels, D_eucli_matrix)[, 3])
+
+# Calcul du score de Davies-Bouldin
+db_score <- davies.bouldin(t(data), numeric_labels)
+
+cat("Score de Silhouette moyen:", silhouette_avg, "\n")
+cat("Score de Davies-Bouldin:", db_score, "\n")
+
+
+# --------------------------------- FIN ----------------------------------------
