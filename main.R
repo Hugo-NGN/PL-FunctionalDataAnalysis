@@ -140,7 +140,7 @@ omega <- 0.5
 ### -------------------- calcul Dp avec parallelisation ------------------------
 
 #system.time(Dp_matrix <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega, STANDARDIZE = FALSE))
-system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega = 0.2, STANDARDIZE = TRUE))
+system.time(Dp_matrix_stdz <- calculate_Dp_matrix_parallel(fd_list, fine_grid, omega = 0.5, STANDARDIZE = TRUE))
 
 #saveRDS(Dp_matrix_stdz, file="./data/Dp_matrix_omega05_n1000.rds")
 #Dp_matrix <- readRDS("./data/Dp_matrix_omega05.rds")
@@ -259,9 +259,9 @@ cat("Score de Davies-Bouldin pour Dp:", db_score_Dp, "\n")
 ## -------------------------------- CAH + KMEANS ------------------------------
 
 
-hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_list)
-hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_list)
-hybride_classif_Dp <- cah_kmeans(Dp_matrix_stdz, fd_list)
+hybride_classif_D0 <- cah_kmeans(D0_matrix, fd_list, method="complete")
+hybride_classif_D1 <- cah_kmeans(D1_matrix, fd_list, method="complete")
+hybride_classif_Dp <- cah_kmeans(Dp_matrix_stdz, fd_list, method="complete")
 
 
 ## ------------------- Comparaison classification ARI --------------------------
