@@ -219,7 +219,7 @@ kmeans_fd <- function(D_matrix, k, fd_obj, SIMULATION = FALSE) {
 
 # ------------------------------- CAH + KMEANS ---------------------------------
 
-cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL, SIMULATION = FALSE) {
+cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL, SIMULATION = FALSE, method = "complete") {
   
   if (!SIMULATION){
     xlab <- "Profondeurs"
@@ -231,7 +231,7 @@ cah_kmeans <- function(D_matrix, fd_obj, cut_tree = 100,  kmeans_k = NULL, SIMUL
     ylim = range(-2,2)
   }
   
-  hc <- hclust(as.dist(D_matrix), method = "complete")
+  hc <- hclust(as.dist(D_matrix), method = method)
   
   cah_clusters <- cutree(hc, k = cut_tree)
   
