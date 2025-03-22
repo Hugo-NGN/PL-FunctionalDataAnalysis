@@ -15,7 +15,7 @@ source("./utils/distances_fonctionnelles.R")
 
 
 data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data, extract_n_data = 1000)
+data <-preprocess(data)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub

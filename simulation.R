@@ -252,7 +252,6 @@ cat("ARI CAH + K-means Dp:", ari_Dp_hybride, "\n")
 
 numeric_labels <- as.numeric(factor(true_labels))
 
-
 silhouette_avg <- mean(silhouette(numeric_labels, D_eucli_matrix)[, 3])
 
 # Calcul du score de Davies-Bouldin
