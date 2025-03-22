@@ -2,23 +2,23 @@ library(dplyr)
 library(ggplot2)
 
 
-show_localisation <- function(data, pixel, cluster, title = "Carte des clusters", data_path){
-  # recupère les pixels 
+show_localisation <- function(data, pixel, cluster, title = "Carte des clusters", data_path) {
+  
   pixel <- get_pixel_bloc(data_path)
   
-  # recupère les coordonnées des pixels
-  coords <- read.csv("data/coords.csv", sep=";")
+  # Récupère les coordonnées des pixels
+  coords <- read.csv("data/coords.csv", sep = ";")
   geo <- get_geo_by_pixel(pixel, coords)
   
   geo[, 4] <- cluster
-
+  
+  # Ajustemnt pour la visualisation(aire des rectangles)
   geo <- geo %>%
-    mutate(lon_min = lon - 0.01,  
+    mutate(lon_min = lon - 0.01,
            lon_max = lon + 0.01,
            lat_min = lat - 0.01,
            lat_max = lat + 0.01)
   
-  # Tracer les zones continues
   ggplot(geo, aes(xmin = lon_min, xmax = lon_max, ymin = lat_min, ymax = lat_max, fill = as.factor(V4))) +
     geom_rect() +
     labs(title = title,
@@ -26,9 +26,8 @@ show_localisation <- function(data, pixel, cluster, title = "Carte des clusters"
          y = "Latitude",
          fill = "Cluster") +
     theme_minimal() +
-    scale_fill_manual(values = c("1" = "blue", "2" = "green"))
+    scale_fill_brewer(type = "qual", palette = "Set1")
 }
-
 
 get_pixel_bloc <- function(data_path, extract_n_data = 1000, bloc = 47){
   data <- read.csv(data_path, sep=";")
