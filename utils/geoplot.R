@@ -2,7 +2,7 @@ library(dplyr)
 library(ggplot2)
 
 
-show_localisation <- function(data, pixel, cluster, title = "Carte des clusters", data_path) {
+show_localisation <- function(data, cluster, title = "Carte des clusters", data_path) {
   
   pixel <- get_pixel_bloc(data_path)
   

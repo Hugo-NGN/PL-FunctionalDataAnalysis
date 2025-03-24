@@ -5,6 +5,7 @@ library(plotly)
 library(cluster)
 library(tidyverse)
 library(factoextra)
+source("./utils/geoplot.R")
 source("./utils/lissage.R")
 source("./utils/preprocess.R")
 source("./utils/clustering.R")
@@ -13,9 +14,9 @@ source("./utils/distances_fonctionnelles.R")
 
 # ------------------------- Chargement des donnees  ----------------------------
 
-
-data <- read.csv("./data/var_SV_2018-01-01_00H_nan-forced_depth.csv", sep=";")
-data <-preprocess(data)
+data_path <- "./data/var_SV_2018-01-01_00H_nan-forced_depth.csv"
+data <- read.csv(data_path, sep=";")
+data <-preprocess(data, extract_n_data = 1000)
 
 sub <- gsub("^X", "", colnames(data))
 colnames(data) <-  sub
@@ -25,7 +26,7 @@ colnames(data) <-  sub
 
 x_values <- as.numeric(colnames(data))
 # Tracer les courbes
-matplot(x_values, t(data), type = "l", lty = 1, col = rainbow(1000), xaxt = "n", ylab ="Célérité", xlab="Profondeur")
+matplot(x_values, t(data), type="p",  lty = 1, col = rainbow(1000), xaxt = "n", ylab ="Célérité", xlab="Profondeur")
 title("Courbes des profils")
 axis(1, at = x_values, labels = colnames(data), las = 2)
 
@@ -66,7 +67,7 @@ for (i in seq(1, length(fd_list))){
 
 #deriv_list <- readRDS("./data/fdata_deriv.rds")
 
-plot(fine_grid, deriv_list[[1]], type ="l", col = 1, lty = 1,
+plot(fine_grid, deriv_list[[1]], type ="c", col = 1, lty = 1,
      main = "Dérivés des profils (bloc 47)",
      ylab = "Dérivés de la célérité/profondeur",
      xlab = "Profondeurs")
@@ -270,6 +271,25 @@ hybride_classif_Dp <- cah_kmeans(Dp_matrix_stdz, fd_list, method="complete")
 ARI_D0 <- compute_ARI(kmeans_D0$km_result$cluster, cah_silhouette_opti_D0$cluster)
 ARI_D1 <- compute_ARI(kmeans_D1$km_result$cluster, cah_silhouette_opti_D1$cluster)
 ARI_Dp <- compute_ARI(kmeans_Dp$km_result$cluster, cah_silhouette_opti_Dp$cluster)
+
+
+
+# ---------------------------- carte Geographique ------------------------------
+
+geoplot_cah_D0 <- show_localisation(data, cah_silhouette_opti_D0$cluster, title = "CAH D0", data_path)
+geoplot_cah_D1 <- show_localisation(data, cah_silhouette_opti_D1$cluster, title = "CAH D1", data_path)
+geoplot_cah_Dp <- show_localisation(data, cah_silhouette_opti_Dp$cluster, title = "CAH Dp", data_path)
+
+geoplot_kmeans_D0 <- show_localisation(data, kmeans_D0$km_result$cluster, title = "Kmeans D0", data_path)
+geoplot_kmeans_D1 <- show_localisation(data, kmeans_D1$km_result$cluster, title = "Kmeans D1", data_path)
+geoplot_kmeans_Dp <- show_localisation(data, kmeans_Dp$km_result$cluster, title = "Kmeans Dp", data_path)
+
+geoplot_hybride_D0 <- show_localisation(data, hybride_classif_D0$cluster, title = "Hybride D0", data_path)
+geoplot_hybride_D1 <- show_localisation(data, hybride_classif_D1$cluster, title = "Hybride D1", data_path)
+geoplot_hybride_Dp <- show_localisation(data, hybride_classif_Dp$cluster, title = "Hybride Dp", data_path)
+
+geoplot_baseline <- show_localisation(data, kmeans_eucli$cluster, title = "Baseline", data_path)
+
 
 
 # ------------------------------ FIN -------------------------------------------
